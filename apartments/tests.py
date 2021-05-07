@@ -27,7 +27,7 @@ def new_city():
 
 @pytest.fixture
 def new_apartment(new_user, new_city):
-    apartment = Apartment(
+    apartment = Apartment.objects.create(
         owner=new_user,
         city=new_city,
         address='street',
@@ -37,7 +37,7 @@ def new_apartment(new_user, new_city):
         start_date='2021-1-1',
         about='Hey!',
         image_url='www.some-url.com',
-    )
+        )
     apartment.save()
     return apartment
 
@@ -81,6 +81,20 @@ class TestViews:
     def test_update_apartment_view_to_not_owner_user(self, client, new_user):
         client.login(email='test@test.com', password='password')
         response = client.get('/apartments/update')
+        assert response.status_code == 302
+        response = client.get(response.url)
+        assert response.status_code == 200
+
+    def test_apartment_details_view_to_valid_apartment_id(self, client, new_apartment):
+        client.login(email='test@test.com', password='password')
+        path = '/apartments/' + str(new_apartment.owner.id) + '/details'
+        response = client.get(path)
+        assert response.status_code == 200
+
+    def test_apartment_details_view_to_invalid_apartment_id(self, client, new_apartment):
+        client.login(email='test@test.com', password='password')
+        path = '/apartments/0/details'
+        response = client.get(path)
         assert response.status_code == 302
         response = client.get(response.url)
         assert response.status_code == 200
